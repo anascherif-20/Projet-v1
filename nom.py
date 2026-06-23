@@ -1,4 +1,4 @@
-
+import ramdom 
 mots = ["chat", "maison", "ecole", "python", "soleil"]
 
 mot = random.choice(mots)
@@ -114,4 +114,3 @@ if tentatives == 0:
     dessiner_pendu(tentatives)
     print("Perdu !")
     print("Le mot était :", mot)
-    
