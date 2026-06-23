@@ -10,12 +10,78 @@ lettres_trouvees = []
 tentatives = 6
 message = ""
 
+dessins = [
+    """
+     +---+
+     |   |
+     O   |
+    /|\\  |
+    / \\  |
+         |
+    =========
+    """,
+    """
+     +---+
+     |   |
+     O   |
+    /|\\  |
+    /    |
+         |
+    =========
+    """,
+    """
+     +---+
+     |   |
+     O   |
+    /|\\  |
+         |
+         |
+    =========
+    """,
+    """
+     +---+
+     |   |
+     O   |
+    /|   |
+         |
+         |
+    =========
+    """,
+    """
+     +---+
+     |   |
+     O   |
+     |   |
+         |
+         |
+    =========
+    """,
+    """
+     +---+
+     |   |
+     O   |
+         |
+         |
+         |
+    =========
+    """,
+    """
+     +---+
+     |   |
+         |
+         |
+         |
+         |
+    =========
+    """
+]
+
 @app.route("/", methods=["GET", "POST"])
 def accueil():
     global mot, lettres_trouvees, tentatives, message
 
     if request.method == "POST":
-        lettre = request.form["lettre"]
+        lettre = request.form["lettre"].lower()
 
         if lettre in mot:
             message = "Bonne réponse !"
@@ -47,7 +113,8 @@ def accueil():
         "index.html",
         affichage=affichage,
         tentatives=tentatives,
-        message=message
+        message=message,
+        dessin=dessins[tentatives]
     )
 
 @app.route("/restart")
