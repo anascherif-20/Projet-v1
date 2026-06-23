@@ -3,19 +3,27 @@
 <head>
     <meta charset="UTF-8">
     <title>Jeu du Pendu</title>
-
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
 </head>
-
 <body>
 
     <div class="container">
         <h1>Jeu du Pendu</h1>
 
-        <h2>Bienvenue !</h2>
+        <p class="mot">{{ affichage }}</p>
 
-        <p>Ici apparaîtra le jeu.</p>
+        <p>Tentatives restantes : {{ tentatives }}</p>
 
+        <p>{{ message }}</p>
+
+        <form method="POST">
+            <input type="text" name="lettre" maxlength="1" required>
+            <button type="submit">Valider</button>
+        </form>
+
+        <br>
+
+        <a href="/restart">Recommencer</a>
     </div>
 
 </body>
