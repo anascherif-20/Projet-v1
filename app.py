@@ -1,65 +1,99 @@
-from flask import Flask, render_template, request, redirect
+from flask import Flask, render_template, request, redirect, session
 import random
 
 app = Flask(__name__)
+app.secret_key = "pendu_secret_v2_2024"
 
-mots = ["chat", "maison", "ecole", "python", "soleil"]
+MOTS = [
+    "elephant", "girafe", "crocodile", "pingouin", "hippopotame",
+    "tigre", "leopard", "gorille", "dauphin", "requin",
+    "python", "ordinateur", "algorithme", "programmation", "clavier",
+    "javascript", "navigateur", "serveur", "microphone", "ecran",
+    "volcan", "galaxie", "planete", "montagne", "cascade",
+    "chocolat", "croissant", "baguette", "fromage", "croissant",
+    "aventure", "mystere", "tresor", "pirate", "explorateur",
+    "bibliotheque", "architecture", "intelligence", "universite", "laboratoire",
+]
 
-mot = random.choice(mots)
-lettres_trouvees = []
-tentatives = 6
-message = ""
+MAX_ERREURS = 6
+
+
+def init_session():
+    session["mot"] = random.choice(MOTS)
+    session["correctes"] = []
+    session["incorrectes"] = []
+    session["message"] = ""
+    session["message_type"] = ""
+
 
 @app.route("/", methods=["GET", "POST"])
 def accueil():
-    global mot, lettres_trouvees, tentatives, message
+    if "mot" not in session:
+        init_session()
 
-    if request.method == "POST":
-        lettre = request.form["lettre"]
+    mot = session["mot"]
+    correctes = list(session["correctes"])
+    incorrectes = list(session["incorrectes"])
+    erreurs = len(incorrectes)
+    gagne = all(l in correctes for l in mot)
+    perdu = erreurs >= MAX_ERREURS
 
-        if lettre in mot:
-            message = "Bonne réponse !"
-            if lettre not in lettres_trouvees:
-                lettres_trouvees.append(lettre)
-        else:
-            message = "Mauvaise réponse !"
-            tentatives -= 1
+    if request.method == "POST" and not gagne and not perdu:
+        lettre = request.form.get("lettre", "").lower().strip()
+        if len(lettre) == 1 and lettre.isalpha():
+            if lettre in correctes or lettre in incorrectes:
+                session["message"] = "Tu as déjà essayé cette lettre !"
+                session["message_type"] = "warn"
+            elif lettre in mot:
+                correctes.append(lettre)
+                session["correctes"] = correctes
+                session["message"] = "Bonne réponse !"
+                session["message_type"] = "good"
+            else:
+                incorrectes.append(lettre)
+                session["incorrectes"] = incorrectes
+                erreurs += 1
+                session["message"] = "Mauvaise lettre..."
+                session["message_type"] = "bad"
 
-    affichage = ""
-    for lettre in mot:
-        if lettre in lettres_trouvees:
-            affichage += lettre + " "
-        else:
-            affichage += "_ "
+    gagne = all(l in correctes for l in mot)
+    perdu = erreurs >= MAX_ERREURS
 
-    gagne = True
-    for lettre in mot:
-        if lettre not in lettres_trouvees:
-            gagne = False
+    if gagne:
+        statut = "gagne"
+        session["message"] = f'Bravo ! Tu as trouvé "{mot.upper()}" !'
+        session["message_type"] = "win"
+    elif perdu:
+        statut = "perdu"
+        session["message"] = f"Perdu ! Le mot était : {mot.upper()}"
+        session["message_type"] = "lose"
+    else:
+        statut = "en_cours"
 
-    if tentatives == 0:
-        message = "Perdu ! Le mot était : " + mot
-
-    if gagne == True:
-        message = "Bravo, tu as gagné ! Le mot était : " + mot
+    affichage = [l if l in correctes else "_" for l in mot]
 
     return render_template(
         "index.html",
         affichage=affichage,
-        tentatives=tentatives,
-        message=message
+        mot=mot,
+        erreurs=erreurs,
+        max_erreurs=MAX_ERREURS,
+        tentatives=MAX_ERREURS - erreurs,
+        message=session.get("message", ""),
+        message_type=session.get("message_type", ""),
+        correctes=correctes,
+        incorrectes=incorrectes,
+        utilisees=correctes + incorrectes,
+        statut=statut,
+        alphabet="abcdefghijklmnopqrstuvwxyz",
     )
+
 
 @app.route("/restart")
 def restart():
-    global mot, lettres_trouvees, tentatives, message
-
-    mot = random.choice(mots)
-    lettres_trouvees = []
-    tentatives = 6
-    message = ""
-
+    session.clear()
     return redirect("/")
+
 
 if __name__ == "__main__":
     app.run(debug=True)

@@ -2,31 +2,258 @@
 <html lang="fr">
 <head>
     <meta charset="UTF-8">
-    <title>Jeu du Pendu</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Le Pendu</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
 </head>
-<body>
+<body class="{{ statut }}">
 
-    <div class="container">
-        <h1>Jeu du Pendu</h1>
-
-        <pre>{{ dessin }}</pre>
-
-        <p class="mot">{{ affichage }}</p>
-
-        <p>Tentatives restantes : {{ tentatives }}</p>
-
-        <p>{{ message }}</p>
-
-        <form method="POST">
-            <input type="text" name="lettre" maxlength="1" required>
-            <button type="submit">Valider</button>
-        </form>
-
-        <br>
-
-        <a href="/restart">Recommencer</a>
+    <div class="bg-orbs">
+        <div class="orb orb-1"></div>
+        <div class="orb orb-2"></div>
+        <div class="orb orb-3"></div>
     </div>
+
+    <main>
+        <div class="card">
+
+            <header>
+                <h1>Le <span class="gradient-text">Pendu</span></h1>
+                <p class="subtitle">Devinez le mot avant qu'il soit trop tard...</p>
+            </header>
+
+            <div class="game-layout">
+
+                <!-- ========== HANGMAN SVG ========== -->
+                <div class="hangman-section">
+
+                    {% set is_dead = erreurs >= 6 %}
+                    {% set has_head = erreurs >= 1 %}
+                    {% if erreurs >= 5 %}
+                        {% set body_color = '#f87171' %}
+                    {% elif erreurs >= 3 %}
+                        {% set body_color = '#fbbf24' %}
+                    {% else %}
+                        {% set body_color = '#cbd5e1' %}
+                    {% endif %}
+
+                    <svg class="hangman-svg" viewBox="0 0 220 280" xmlns="http://www.w3.org/2000/svg" aria-label="Bonhomme pendu">
+
+                        <!-- Gallows structure (always visible) -->
+                        <g class="gallows" stroke="#334155" stroke-width="4" stroke-linecap="round" fill="none">
+                            <line x1="20"  y1="265" x2="200" y2="265"/>  <!-- base -->
+                            <line x1="65"  y1="265" x2="65"  y2="15"/>   <!-- pole -->
+                            <line x1="65"  y1="15"  x2="150" y2="15"/>   <!-- beam -->
+                            <line x1="65"  y1="48"  x2="92"  y2="15"/>   <!-- brace -->
+                            <line x1="150" y1="15"  x2="150" y2="52"/>   <!-- rope -->
+                        </g>
+
+                        <!-- Noose (appears with head) -->
+                        <ellipse
+                            class="noose-loop {{ 'visible' if has_head }}"
+                            cx="150" cy="55" rx="7" ry="4.5"
+                            stroke="#475569" stroke-width="2.5" fill="none"/>
+
+                        <!-- ── HEAD ── -->
+                        <circle
+                            class="part {{ 'visible' if erreurs >= 1 }}"
+                            cx="150" cy="74" r="19"
+                            stroke="{{ body_color }}" stroke-width="3.5" fill="none"/>
+
+                        <!-- ── EYES: alive ── -->
+                        <g class="part face-alive {{ 'visible' if has_head and not is_dead }}">
+                            <circle cx="143" cy="70" r="2.8" fill="{{ body_color }}" stroke="none"/>
+                            <circle cx="157" cy="70" r="2.8" fill="{{ body_color }}" stroke="none"/>
+                        </g>
+
+                        <!-- ── MOUTH: smile ── -->
+                        <path
+                            class="part face-alive {{ 'visible' if has_head and not is_dead }}"
+                            d="M 143 80 Q 150 86 157 80"
+                            stroke="{{ body_color }}" stroke-width="2.5" fill="none" stroke-linecap="round"/>
+
+                        <!-- ── EYES: dead (X) ── -->
+                        <g class="part face-dead {{ 'visible' if is_dead }}"
+                           stroke="#f87171" stroke-width="2.5" stroke-linecap="round">
+                            <line x1="140" y1="67" x2="146" y2="73"/>
+                            <line x1="146" y1="67" x2="140" y2="73"/>
+                            <line x1="154" y1="67" x2="160" y2="73"/>
+                            <line x1="160" y1="67" x2="154" y2="73"/>
+                        </g>
+
+                        <!-- ── MOUTH: frown ── -->
+                        <path
+                            class="part face-dead {{ 'visible' if is_dead }}"
+                            d="M 143 84 Q 150 78 157 84"
+                            stroke="#f87171" stroke-width="2.5" fill="none" stroke-linecap="round"/>
+
+                        <!-- ── BODY ── -->
+                        <line
+                            class="part {{ 'visible' if erreurs >= 2 }}"
+                            x1="150" y1="93" x2="150" y2="168"
+                            stroke="{{ body_color }}" stroke-width="3.5" stroke-linecap="round"/>
+
+                        <!-- ── LEFT ARM ── -->
+                        <line
+                            class="part {{ 'visible' if erreurs >= 3 }}"
+                            x1="150" y1="115" x2="116" y2="145"
+                            stroke="{{ body_color }}" stroke-width="3.5" stroke-linecap="round"/>
+
+                        <!-- ── RIGHT ARM ── -->
+                        <line
+                            class="part {{ 'visible' if erreurs >= 4 }}"
+                            x1="150" y1="115" x2="184" y2="145"
+                            stroke="{{ body_color }}" stroke-width="3.5" stroke-linecap="round"/>
+
+                        <!-- ── LEFT LEG ── -->
+                        <line
+                            class="part {{ 'visible' if erreurs >= 5 }}"
+                            x1="150" y1="168" x2="118" y2="215"
+                            stroke="{{ body_color }}" stroke-width="3.5" stroke-linecap="round"/>
+
+                        <!-- ── RIGHT LEG ── -->
+                        <line
+                            class="part {{ 'visible' if erreurs >= 6 }}"
+                            x1="150" y1="168" x2="182" y2="215"
+                            stroke="{{ body_color }}" stroke-width="3.5" stroke-linecap="round"/>
+
+                    </svg>
+
+                    <!-- Error counter -->
+                    <div class="error-counter">
+                        <span class="error-num {{ 'danger' if erreurs >= 5 else ('warn' if erreurs >= 3 else '') }}">
+                            {{ erreurs }}
+                        </span>
+                        <span class="error-label">/ {{ max_erreurs }} erreurs</span>
+                    </div>
+
+                    <!-- Wrong letters list -->
+                    {% if incorrectes %}
+                    <div class="wrong-letters">
+                        {% for l in incorrectes %}
+                        <span class="wrong-badge">{{ l.upper() }}</span>
+                        {% endfor %}
+                    </div>
+                    {% endif %}
+
+                </div><!-- /hangman-section -->
+
+                <!-- ========== CONTROLS ========== -->
+                <div class="controls-section">
+
+                    <!-- Word display -->
+                    <div class="word-display">
+                        {% for i in range(mot|length) %}
+                        {% set l = affichage[i] %}
+                        <div class="letter-box
+                            {{ 'revealed' if l != '_' }}
+                            {{ 'missed' if l == '_' and statut == 'perdu' }}">
+                            <span>
+                                {% if l != '_' %}{{ l.upper() }}
+                                {% elif statut == 'perdu' %}{{ mot[i].upper() }}
+                                {% endif %}
+                            </span>
+                        </div>
+                        {% endfor %}
+                    </div>
+
+                    <!-- Message -->
+                    {% if message %}
+                    <div class="message msg-{{ message_type }}">{{ message }}</div>
+                    {% endif %}
+
+                    <!-- Input form -->
+                    {% if statut == 'en_cours' %}
+                    <form method="POST" class="guess-form" id="guessForm" autocomplete="off">
+                        <input
+                            type="text"
+                            name="lettre"
+                            id="letterInput"
+                            maxlength="1"
+                            spellcheck="false"
+                            placeholder="?"
+                            autofocus
+                            required
+                        >
+                        <button type="submit" class="btn-submit">↵ Valider</button>
+                    </form>
+
+                    <!-- Alphabet keyboard -->
+                    <div class="keyboard">
+                        {% for l in alphabet %}
+                        {% set is_ok  = l in correctes %}
+                        {% set is_bad = l in incorrectes %}
+                        <button
+                            class="key {{ 'key-ok' if is_ok else ('key-bad' if is_bad else '') }}"
+                            {{ 'disabled' if is_ok or is_bad }}
+                            onclick="submitLetter('{{ l }}')"
+                            type="button">{{ l.upper() }}</button>
+                        {% endfor %}
+                    </div>
+                    {% endif %}
+
+                    <!-- Restart -->
+                    <a href="/restart" class="btn-restart">
+                        {% if statut == 'gagne' %}
+                            Rejouer
+                        {% elif statut == 'perdu' %}
+                            Réessayer
+                        {% else %}
+                            Nouveau mot
+                        {% endif %}
+                    </a>
+
+                </div><!-- /controls-section -->
+            </div><!-- /game-layout -->
+        </div><!-- /card -->
+    </main>
+
+    <script>
+        const usedLetters = {{ utilisees | tojson }};
+
+        function submitLetter(letter) {
+            const input = document.getElementById('letterInput');
+            if (input) {
+                input.value = letter;
+                document.getElementById('guessForm').submit();
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            const input = document.getElementById('letterInput');
+            const form  = document.getElementById('guessForm');
+            if (!input) return;
+
+            // Sanitize: letters only
+            input.addEventListener('input', () => {
+                input.value = input.value.toLowerCase().replace(/[^a-z]/g, '');
+            });
+
+            // Warn if letter was already tried
+            form.addEventListener('submit', (e) => {
+                const val = input.value.toLowerCase().trim();
+                if (usedLetters.includes(val)) {
+                    e.preventDefault();
+                    input.classList.add('shake');
+                    input.value = '';
+                    input.placeholder = 'Déjà essayée !';
+                    setTimeout(() => {
+                        input.classList.remove('shake');
+                        input.placeholder = '?';
+                    }, 1200);
+                }
+            });
+
+            // Any letter key focuses the input
+            document.addEventListener('keydown', (e) => {
+                if (e.key.length === 1 && /[a-zA-Z]/.test(e.key) && document.activeElement !== input) {
+                    input.focus();
+                }
+            });
+        });
+    </script>
 
 </body>
 </html>
