@@ -1,4 +1,4 @@
-import ramdom 
+import random 
 mots = ["chat", "maison", "ecole", "python", "soleil"]
 
 mot = random.choice(mots)
