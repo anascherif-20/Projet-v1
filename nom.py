@@ -114,3 +114,13 @@ if tentatives == 0:
     dessiner_pendu(tentatives)
     print("Perdu !")
     print("Le mot était :", mot)
+
+
+
+
+
+
+
+
+
+    
